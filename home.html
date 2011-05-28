@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<link rel="icon" type="image/png" href="/images/favicon.png" />
+
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+
+	<title>Pilot Reports</title>
+</head>
+
+<body>
+<div id="wrapper">
+
+	<div id="header" class="col-full">
+
+		<div id="logo">
+
+		</div><!-- /#logo -->
+
+	</div><!-- /#header -->
+
+	{% if user %}
+	<div class="content">
+		<h3 id="logout"><a href="{{ url }}">Sign Out</a></h3>
+	</div>
+
+	{% else %}
+	<div class="content">
+		<h3 id="login"><a href="{{ url }}">Login using your Google account to get started.</a></h3>
+	</div>
+	{% endif %}
+
+	<div id="footer" class="col-full">
+
+		<div id="copyright">
+		</div>
+
+	</div><!-- /#footer  -->
+
+</div><!-- /#wrapper -->
+</body>
+</html>

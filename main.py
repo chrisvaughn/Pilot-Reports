@@ -14,20 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+import os, re, base64, logging
+from google.appengine.ext import db
 from google.appengine.ext import webapp
+from google.appengine.api import users as google_users
 from google.appengine.ext.webapp import util
+from google.appengine.ext.webapp import template
+from models import Users
 
 
 class MainHandler(webapp.RequestHandler):
-    def get(self):
-        self.response.out.write('Hello world!')
+	""" handler for / """
+	def get(self):
+		""" this handler supports http get """
+		data = {}
+		if google_users.get_current_user():
+			google_user = google_users.get_current_user()
+			user = db.Query(Users).filter('user_id =', google_user.user_id()).get()
+
+			data['url'] = google_users.create_logout_url(self.request.uri)
+			data['user'] = google_users.get_current_user()
+		else:
+			data['url'] = google_users.create_login_url(self.request.uri)
+
+		path = os.path.join(os.path.dirname(__file__), 'home.html')
+		self.response.out.write(template.render(path, data))
+
 
 
 def main():
-    application = webapp.WSGIApplication([('/', MainHandler)],
-                                         debug=True)
-    util.run_wsgi_app(application)
+	application = webapp.WSGIApplication([('/', MainHandler)],
+										 debug=True)
+	util.run_wsgi_app(application)
 
 
 if __name__ == '__main__':
-    main()
+	main()
