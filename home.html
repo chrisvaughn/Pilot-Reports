@@ -22,6 +22,9 @@
 	{% if user %}
 	<div class="content">
 		<h3 id="logout"><a href="{{ url }}">Sign Out</a></h3>
+		XAcars Login info:<br>
+		Username: {{ user.email }}<br>
+		Password: {{ user_token }}
 	</div>
 
 	{% else %}
