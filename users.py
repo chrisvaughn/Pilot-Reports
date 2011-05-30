@@ -2,6 +2,6 @@
 from google.appengine.ext import db
 
 class Users(db.Model):
-	user_id = db.StringProperty()
-	email = db.StringProperty()
-	token = db.StringProperty()
+    user_id = db.StringProperty()
+    email = db.StringProperty()
+    token = db.StringProperty()
