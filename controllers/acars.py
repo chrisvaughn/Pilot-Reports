@@ -5,8 +5,8 @@ from google.appengine.ext import webapp
 from google.appengine.api import users as google_users
 from google.appengine.ext.webapp import template
 
-from model.users import Users
-from model.acars import AcarsPosition
+from models.users import Users
+from models.acars import AcarsPosition
 
 def check_XAcars_version(DATA1):
     if (DATA1 == 'XACARS|1.0' or DATA1 == 'XACARS|1.1' or DATA1 == 'XACARS|2.0' or

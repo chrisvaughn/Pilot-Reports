@@ -1,8 +1,8 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
-from controller.home import HomeController
-from controller.acars import LiveAcarsController
+from controllers.home import HomeController
+from controllers.acars import LiveAcarsController
 
 def main():
     application = webapp.WSGIApplication([('/', HomeController), ('/liveacars', LiveAcarsController)],

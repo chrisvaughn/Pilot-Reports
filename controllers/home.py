@@ -5,8 +5,8 @@ from google.appengine.ext import webapp
 from google.appengine.api import users as google_users
 from google.appengine.ext.webapp import template
 
-from model.users import Users
-from model.acars import AcarsPosition
+from models.users import Users
+from models.acars import AcarsPosition
 
 TOKEN_LENGTH = 10
 
@@ -28,5 +28,5 @@ class HomeController(webapp.RequestHandler):
         else:
             data['url'] = google_users.create_login_url(self.request.uri)
         
-        path = os.path.join(os.path.dirname(__file__), '../view/home.html')
+        path = os.path.join(os.path.dirname(__file__), '../views/home.html')
         self.response.out.write(template.render(path, data))
