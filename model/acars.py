@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-
 import os
 import logging
+
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.api import users as google_users
