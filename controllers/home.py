@@ -6,7 +6,6 @@ from google.appengine.api import users as google_users
 from google.appengine.ext.webapp import template
 
 from models.users import Users
-from models.acars import AcarsPosition
 
 TOKEN_LENGTH = 10
 
