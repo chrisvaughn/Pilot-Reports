@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import time
 
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -60,6 +61,9 @@ def lon_degdecmin_2_decdeg(data):
 
 
 class LiveAcarsController(webapp.RequestHandler):
+    def post(self):
+        self.get()
+        
     def get(self):
 
         data1 = self.request.get('DATA1')
@@ -74,8 +78,9 @@ class LiveAcarsController(webapp.RequestHandler):
         if data2 == '':
             self.response.out.write('0|Invalid Data2')
             return
-
-        if check_XAcars_version(data1) == ACARS_UNKNOWN:
+        
+        version = check_XAcars_version(data1)
+        if version == ACARS_UNKNOWN:
             self.response.out.write('0|Invalid XAcars Version')
             return
         
@@ -87,9 +92,62 @@ class LiveAcarsController(webapp.RequestHandler):
             data3 = data3.replace("\'", "''")
         if data4 != '':
             data4 = data4.replace("\'", "''")
-         
-        self.response.out.write(data1+"<br>")
-        self.response.out.write(data2+"<br>")
-        self.response.out.write(data3+"<br>")
-        self.response.out.write(data4+"<br>")
 
+        commands = ({'TEST': self.test_cmd, 'BEGINFLIGHT': self.beginflight_cmd, 
+                    'MESSAGE': self.message_cmd, 'PAUSEFLIGHT': self.pauseflight_cmd, 
+                    'ENDFLIGH': self.endflight_cmd })
+        
+        commands.get(data2, self.unknown_cmd)(version, data3, data4)
+        
+    def test_cmd(self, version, data3, data4):
+        if Users.test_pilot_id(data3) > 0:
+            self.response.out.write('1')
+        else:
+            self.response.out.write('0|Unknown PilotID '+data3)
+    
+    def beginflight_cmd(self, version, data3, data4):
+        ''' Begin Flight logging on ACARS '''
+        data = data3.split("|")
+        
+        if len(data) < 16:
+            self.response.out.write('0|Invalid login data ('+ str(len(data)) +')')
+            return
+        
+        uid = Users.test_user_login(data[0], data[17]);
+        if uid is None:
+            self.response.out.write('0|Login failed')
+            return
+        
+        acars_flight = AcarsFlight();
+        acars_flight.flight_id = str(time.time()).replace('.', '')
+        acars_flight.user_id = uid;
+        acars_flight.acars_id  = version;
+
+        # *** Origin and Destination Airports
+        if len(data[5]) != 0:
+            plan = data[5].split('~')
+            acars_flight.departure = plan[0].upper()
+            if len(plan) > 1:
+                acars_flight.destination = plan[-1].upper()
+        
+        acars_flight.aircraft_type = data[3]  #AircraftRegistration
+        acars_flight.flight_type = data[15] #flightType
+        acars_flight.flight_plan = plan  #flightPlan
+        acars_flight.flight_number = data[2]  #FlightNumber
+
+        db.put(acars_flight)
+
+        self.response.out.write('1|'+acars_flight.flight_id)
+    
+    def message_cmd(self, version, data3, data4):
+        pass
+    
+    def pauseflight_cmd(self, version, data3, data4):
+        self.response.out.write('1|');
+    
+    def endflight_cmd(self, version, data3, data4):
+        pass
+    
+    def unknown_cmd(self, version, data3, data4):
+        self.response.out.write('0|Wrong Function')
+        

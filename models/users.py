@@ -23,7 +23,7 @@ class Users(db.Model):
     def test_user_login(cls, id, pw):
         user = db.Query(Users).filter("email =", id).filter("token =", pw).get()
         if user is None:
-            return -1
+            return None
         else:
             return user.email
     test_user_login = classmethod(test_user_login)

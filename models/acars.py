@@ -64,7 +64,7 @@ class AcarsPosition(db.Model):
 class AcarsFlight(db.Model):
     flight_id = db.StringProperty()
     user_id = db.StringProperty()
-    acars_id = db.StringProperty()
+    acars_id = db.IntegerProperty()
     aircraft_type = db.StringProperty()
     flight_number = db.StringProperty()
     flight_type = db.StringProperty()
