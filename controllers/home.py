@@ -7,6 +7,9 @@ from google.appengine.api import users as google_users
 
 from models.users import Users
 from models.acars import AcarsFlightData
+from models.acars import AcarsFlight
+from models.acars import AcarsPirep
+
 
 TOKEN_LENGTH = 10
 jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), '../views')))
@@ -25,6 +28,8 @@ class HomeController(webapp2.RequestHandler):
 
             data['url'] = google_users.create_logout_url(self.request.uri)
             data['user'] = user
+            data['active_flights'] = AcarsFlight.active_flights_for_user(user.user_id)
+            data['reported_flights'] = AcarsPirep.flights_for_user(user.user_id)
         else:
             data['url'] = google_users.create_login_url(self.request.uri)
         

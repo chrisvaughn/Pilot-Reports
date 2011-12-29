@@ -18,6 +18,32 @@
 		XAcars Login info:<br>
 		Username: {{ user.email }}<br>
 		Password: {{ user.token }}
+		
+		<h2>Active Flights</h2>
+		<table>
+		{% for flight in active_flights %}
+			<tr>
+				<td>{{ flight.flight_number }}</td>
+				<td>{{ flight.aircraft_type }}</td>
+				<td>{{ flight.departure }}</td>
+				<td>{{ flight.destination }}</td>
+				<td>{{ flight.flight_plan }}</td>
+			</tr>
+		{% endfor %}
+		</table>
+
+		<h2>Pirep Flights</h2>
+		<table>
+		{% for flight in reported_flights %}
+			<tr>
+				<td>{{ flight.time_report }}</td>
+				<td>{{ flight.flight_number }}</td>
+				<td>{{ flight.ac_icao }}</td>
+				<td>{{ flight.departure }}</td>
+				<td>{{ flight.destination }}</td>
+			</tr>
+		{% endfor %}
+		</table>
 	</div>
 
 	{% else %}

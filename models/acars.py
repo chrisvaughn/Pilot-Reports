@@ -77,6 +77,16 @@ class AcarsFlight(db.Model):
     def add_flight(self):
         db.put_async(self)
 
+    def active_flights_for_user(self, user_id, limit=20, offset=0):
+        flights = db.Query(AcarsFlight).filter("user_id =", user_id).fetch(limit, offset)
+        active_flights = []
+        for flight in flights:
+            position = db.Query(AcarsPosition).filter("flight_id =", flight.flight_id).filter("message_type = ", 'ZZ').get()
+            if position is None:
+                active_flights.append(flight)
+        return active_flights
+    active_flights_for_user = classmethod(active_flights_for_user)
+
 
 class AcarsPirep(db.Model):
     time_report = db.DateTimeProperty(auto_now_add=True)
@@ -115,6 +125,10 @@ class AcarsPirep(db.Model):
 
     def add_pirep(self):
         db.put_async(self)
+
+    def flights_for_user(self, user_id, limit=20, offset=0):
+        return db.Query(AcarsPirep).filter("user_id =", user_id).fetch(limit, offset)
+    flights_for_user = classmethod(flights_for_user)
 
 class AcarsFlightData(db.Model):
     flight_number = db.StringProperty()
