@@ -1,13 +1,11 @@
-import os
-import sys
 import logging
 import time
 import datetime
+import webapp2
+import jinja2
 
 from google.appengine.ext import db
-from google.appengine.ext import webapp
 from google.appengine.api import users as google_users
-from google.appengine.ext.webapp import template
 
 from models.users import Users
 from models.acars import *
@@ -22,9 +20,6 @@ def check_XAcars_version(DATA1):
         return ACARS_XACARS_MSFS
     else:
         return ACARS_UNKNOWN
-
-def lbs2kg( lbs ):
-    return  float(lbs) / 2.204622915
 
 #N52 23.1890 
 def lat_degdecmin_2_decdeg(p1, p2):
@@ -54,11 +49,20 @@ def lon_degdecmin_2_decdeg(p1, p2):
     
     return round(dec,4)
 
+def time2min(time):
+    if time is not None:
+        return time.hour*60 + time.minute
+    else:
+        return 0;
 
-class LiveAcarsController(webapp.RequestHandler):
+
+class LiveAcarsController(webapp2.RequestHandler):
+
+
     def post(self):
         self.get()
-        
+    
+    #liveacars.php?DATA1=XACARS|1.0&DATA2=BEGINFLIGHT&DATA3=bharb||XAC1001|B737||EDDP~TADUV~Z21~OMELO~L620~KOMUR~M725~VLM~T46~ASTUT~LOWW|N48 6.59752 E16 34.9286|602||||155|120|20605|29|IFR|0|keines
     def get(self):
 
         data1 = self.request.get('DATA1')
@@ -79,7 +83,7 @@ class LiveAcarsController(webapp.RequestHandler):
             self.response.out.write('0|Invalid XAcars Version')
             return
         
-        logging.debug('?DATA1='+data1+'&DATA2='+data2+'&DATA3='+data3+'&DATA4='+data4)
+        #logging.debug('?DATA1='+data1+'&DATA2='+data2+'&DATA3='+data3+'&DATA4='+data4)
 
         data2 = data2.replace("\'", "''")
         
@@ -90,7 +94,7 @@ class LiveAcarsController(webapp.RequestHandler):
 
         commands = ({'TEST': self.test_cmd, 'BEGINFLIGHT': self.beginflight_cmd, 
                     'MESSAGE': self.message_cmd, 'PAUSEFLIGHT': self.pauseflight_cmd, 
-                    'ENDFLIGH': self.endflight_cmd })
+                    'ENDFLIGHT': self.endflight_cmd })
         
         commands.get(data2, self.unknown_cmd)(version, data3, data4)
         
@@ -108,14 +112,14 @@ class LiveAcarsController(webapp.RequestHandler):
             self.response.out.write('0|Invalid login data ('+ str(len(data)) +')')
             return
         
-        uid = Users.test_user_login(data[0], data[17]);
-        if uid is None:
+        user_id = Users.test_user_login(data[0], data[17]);
+        if user_id is None:
             self.response.out.write('0|Login failed')
             return
         
         acars_flight = AcarsFlight();
         acars_flight.flight_id = str(time.time()).replace('.', '')
-        acars_flight.user_id = uid;
+        acars_flight.user_id = user_id;
         acars_flight.acars_id  = version;
 
         # *** Origin and Destination Airports
@@ -130,7 +134,7 @@ class LiveAcarsController(webapp.RequestHandler):
         acars_flight.flight_plan = plan  #flightPlan
         acars_flight.flight_number = data[2]  #FlightNumber
 
-        db.put(acars_flight)
+        acars_flight.add_flight()
 
         acars_position = AcarsPosition();
         acars_position.flight_id = acars_flight.flight_id
@@ -152,11 +156,10 @@ class LiveAcarsController(webapp.RequestHandler):
         acars_position.wnd = data[13]
         acars_position.oat = int(data[14])
         acars_position.tat = int(data[14])
-        acars_position.fob = lbs2kg(data[11])
+        acars_position.fob = int(data[11])
         acars_position.distance_total = int(data[16])
         acars_position.message = db.Text(data3)
         
-        db.put(acars_position)
         acars_position.add_position()
         
         self.response.out.write('1|'+acars_flight.flight_id)
@@ -234,7 +237,7 @@ class LiveAcarsController(webapp.RequestHandler):
                 acars_position.tat = int(cnt)
             
             if cmd == 'FOB':
-                acars_position.fob = lbs2kg(cnt)
+                acars_position.fob = int(cnt)
                 
             if cmd == 'WND':
                 acars_position.wnd = cnt
@@ -293,8 +296,7 @@ class LiveAcarsController(webapp.RequestHandler):
                     '''Initial Descend'''
                     acars_position.flight_status = FLIGHTSTATUS_DESC
 
-        db.put(acars_position)
-        acars_position.add_position()    
+        acars_position.add_position() 
         self.response.out.write('1|')
     
     def pauseflight_cmd(self, version, data3, data4):
@@ -306,10 +308,144 @@ class LiveAcarsController(webapp.RequestHandler):
         acars_position.flight_status = FLIGHTSTATUS_END
         acars_position.message_type = 'ZZ'
         
-        db.put(acars_position)
         acars_position.add_position()    
         self.response.out.write('1|')
     
     def unknown_cmd(self, version, data3, data4):
         self.response.out.write('0|Wrong Function')
+        
+
+class PirepController(webapp2.RequestHandler):
+
+    def post(self):
+        self.get()
+    
+    #Parameterlist:
+    #DATA1=XACARS|1.0&DATA2=username~password~flightnumber~aircrafticao~altitudeorFL~flightrules~depicao~desticao~alticao~deptime(dd.mm.yyyy hh:mm)~blocktime(hh:mm)~flighttime(hh:mm)~blockfuel~flightfuel~pax~cargo~online(VATSIM|ICAO|FPI|[other])
+    #DATA1=XACARS|1.1&DATA2=xactesting~xactestingpass~xac1001~F100~24000~IFR~LOWW~LOWI~EDDM~01.07.2009 18:32~02:04~01:27~1980~1456~72~2100~VATSIM~123456719~123456729~123456739~123456749~22000~25000~23000~N43 12.2810~E18 12.3802~630~N43 12.2810~E18 12.3802~320~2347~3202~290~450
+    def get(self):
+
+        data1 = self.request.get('DATA1')
+        data2 = self.request.get('DATA2')
+             
+        if data1 == '':
+            self.response.out.write('0|Invalid Data1')
+            return
+ 
+        if data2 == '':
+            self.response.out.write('0|Invalid Data2')
+            return
+        
+        version = check_XAcars_version(data1)
+        if version == ACARS_UNKNOWN:
+            self.response.out.write('0|Invalid XAcars Version')
+            return
+        
+        #logging.debug('?DATA1='+data1+'&DATA2='+data2)
+
+        data = data2.split('~')
+
+        user_id = Users.test_user_login(data[0], data[1]);
+        if user_id is None:
+            self.response.out.write('0|Login failed')
+            return
+
+        pirep = AcarsPirep()
+        pirep.acars_id = version
+        pirep.user_id = user_id
+        pirep.flight_number = data[2]
+        pirep.ac_icao = data[3]
+        pirep.cruise_alt = int(data[4])
+        pirep.flight_type = data[5]
+        
+        pirep.departure = data[6]
+        pirep.destination = data[7]
+        pirep.alternate = data[8]
+
+        pirep.dep_time = datetime.datetime.strptime(data[9], '%d.%m.%Y %H:%M')
+        pirep.block_time = time2min(datetime.datetime.strptime(data[10], '%H:%M'))
+        pirep.block_fuel = int(data[12])
+        pirep.flight_time = time2min(datetime.datetime.strptime(data[11], '%H:%M'))
+        pirep.flight_fuel = int(data[13])
+        
+        pirep.pax = int(data[14])
+        pirep.cargo = int(data[15])
+
+        if data[16].upper() == 'VATSIM':
+            pirep.online = ONLINE_VATSIM
+        elif data[16].upper() == 'IVAO':
+            pirep.online = ONLINE_IVAO
+        elif data[16].upper() == 'FPI':
+            pirep.online = ONLINE_FPI
+        else:
+            pirep.online = ONLINE_OTHER
+
+        if len(data) > 17:
+            pirep.engine_start_ts = int(data[17])
+            pirep.takeoff_ts = int(data[18])
+            pirep.landing_ts = int(data[19])
+            pirep.engine_stop_ts = int(data[20])
+        
+            pirep.zero_fuel_weight = int(data[21])
+            pirep.take_off_weight = int(data[22])
+            pirep.landing_weight = int(data[23])
+
+            pirep.out_geo = db.GeoPt(data[24], data[25])
+            pirep.out_altitude = int(data[26])
+        
+            pirep.in_geo = db.GeoPt(data[27], data[28])
+            pirep.in_altitude = int(data[29])
+        
+            pirep.max_climb_rate = int(data[30])
+            pirep.max_descend_rate = int(data[31])
+            pirep.max_ias = int(data[32])
+            pirep.max_gs = int(data[33])
+        
+        pirep.add_pirep()
+        self.response.out.write('1|PIREP ACCEPTED')
+        
+    
+class FlightDataController(webapp2.RequestHandler):
+
+    def post(self):
+        self.get()
+    
+    #Parameterlist:
+    #DATA1=XACARS|1.1&DATA2=XAC1001
+    def get(self):
+
+        data1 = self.request.get('DATA1')
+        data2 = self.request.get('DATA2')
+             
+        if data1 == '':
+            self.response.out.write('0|Invalid Data1')
+            return
+ 
+        if data2 == '':
+            self.response.out.write('0|Invalid Data2')
+            return
+        
+        version = check_XAcars_version(data1)
+        if version == ACARS_UNKNOWN:
+            self.response.out.write('0|Invalid XAcars Version')
+            return
+        
+        #logging.debug('?DATA1='+data1+'&DATA2='+data2)
+
+        flight = db.Query(AcarsFlightData).filter("flight_number =", data2).get()
+
+        if flight:
+            self.response.out.write('1|flightplan'+"\n")
+            self.response.out.write(flight.departure+"\n")
+            self.response.out.write(flight.destination+"\n")
+            self.response.out.write(flight.alternate+"\n")
+            self.response.out.write(flight.route+"\n")
+            self.response.out.write(flight.pax+"\n")
+            self.response.out.write(flight.cargo+"\n")
+            self.response.out.write(flight.rules+"\n")
+            self.response.out.write(flight.aircraft+"\n")
+            self.response.out.write(flight.altitude+"\n")
+        else:
+            self.response.out.write('0|Flightnumber not found')
+
         

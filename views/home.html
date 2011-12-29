@@ -2,21 +2,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<link rel="icon" type="image/png" href="/images/favicon.png" />
-
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
-
 	<title>Pilot Reports</title>
 </head>
-
 <body>
 <div id="wrapper">
-
 	<div id="header" class="col-full">
-
 		<div id="logo">
-
 		</div><!-- /#logo -->
-
 	</div><!-- /#header -->
 
 	{% if user %}
@@ -24,7 +17,7 @@
 		<h3 id="logout"><a href="{{ url }}">Sign Out</a></h3>
 		XAcars Login info:<br>
 		Username: {{ user.email }}<br>
-		Password: {{ user_token }}
+		Password: {{ user.token }}
 	</div>
 
 	{% else %}
@@ -34,10 +27,8 @@
 	{% endif %}
 
 	<div id="footer" class="col-full">
-
 		<div id="copyright">
 		</div>
-
 	</div><!-- /#footer  -->
 
 </div><!-- /#wrapper -->

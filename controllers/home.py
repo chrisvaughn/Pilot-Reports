@@ -1,15 +1,17 @@
 import os
+import webapp2
+import jinja2
 
 from google.appengine.ext import db
-from google.appengine.ext import webapp
 from google.appengine.api import users as google_users
-from google.appengine.ext.webapp import template
 
 from models.users import Users
+from models.acars import AcarsFlightData
 
 TOKEN_LENGTH = 10
+jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), '../views')))
 
-class HomeController(webapp.RequestHandler):
+class HomeController(webapp2.RequestHandler):
     def get(self):
         """ this handler supports http get """
         data = {}
@@ -22,10 +24,27 @@ class HomeController(webapp.RequestHandler):
                 db.put(user)
 
             data['url'] = google_users.create_logout_url(self.request.uri)
-            data['user'] = google_users.get_current_user()
-            data['user_token'] = user.token
+            data['user'] = user
         else:
             data['url'] = google_users.create_login_url(self.request.uri)
         
-        path = os.path.join(os.path.dirname(__file__), '../views/home.html')
-        self.response.out.write(template.render(path, data))
+        template = jinja_environment.get_template('home.html')
+        self.response.out.write(template.render(data))
+
+class FlightDatabaseController(webapp2.RequestHandler):
+
+
+    def get(self):
+        flight_data = AcarsFlightData()
+        flight_data.flight_number = 'EA1492'
+        flight_data.aircraft = 'B737'
+        flight_data.departure = 'PANC'
+        flight_data.destination = 'PAKT'
+        flight_data.alternate = 'PJNU'
+        flight_data.route = 'ANC4 JOH J501 YAK J541 SSR J502 DOOZI'
+        flight_data.altitude = 'FL30'
+        flight_data.pax = '15'
+        flight_data.cargo = '2000'
+        flight_data.rules = 'IFR'
+
+        flight_data.add_flight_data()

@@ -1,14 +1,11 @@
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
+import webapp2
 
-from controllers.home import HomeController
-from controllers.acars import LiveAcarsController
+from controllers.home import *
+from controllers.acars import *
 
-def main():
-    application = webapp.WSGIApplication([('/', HomeController), 
-                                          ('/liveacars', LiveAcarsController)],
-                                         debug=True)
-    util.run_wsgi_app(application)
-
-if __name__ == '__main__':
-    main()
+app = webapp2.WSGIApplication([('/', HomeController),
+							   ('/flight_db', FlightDatabaseController),
+                               ('/liveacars', LiveAcarsController),
+                               ('/pirep', PirepController),
+                               ('/flightdata', FlightDataController)],
+								debug=True)

@@ -17,7 +17,7 @@ class Users(db.Model):
         if user is None:
             return -1
         else:
-            return user.email
+            return user.user_id
     test_pilot_id = classmethod(test_pilot_id)
 
     def test_user_login(cls, id, pw):
@@ -25,5 +25,5 @@ class Users(db.Model):
         if user is None:
             return None
         else:
-            return user.email
+            return user.user_id
     test_user_login = classmethod(test_user_login)

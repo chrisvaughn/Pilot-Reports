@@ -1,11 +1,9 @@
-import os
 import logging
+import webapp2
 
 from google.appengine.ext import db
-from google.appengine.ext import webapp
+
 from google.appengine.api import users as google_users
-from google.appengine.ext.webapp import util
-from google.appengine.ext.webapp import template
 
 ACARS_UNKNOWN = -1
 ACARS_XACARS = 3
@@ -30,6 +28,11 @@ VSPEED_GND = 0
 VSPEED_CLB = +1
 VSPEED_DES = -1
 
+ONLINE_VATSIM = 1
+ONLINE_IVAO = 2
+ONLINE_FPI = 3
+ONLINE_OTHER = 0
+
 
 class AcarsPosition(db.Model):
     flight_id = db.StringProperty()
@@ -43,10 +46,10 @@ class AcarsPosition(db.Model):
     hdg = db.IntegerProperty()
     alt = db.IntegerProperty()
     vs = db.IntegerProperty()
-    gs = db.FloatProperty()
+    gs = db.IntegerProperty()
     ias = db.IntegerProperty()
     tas = db.IntegerProperty()
-    fob = db.FloatProperty()
+    fob = db.IntegerProperty()
     wnd = db.StringProperty()
     oat = db.IntegerProperty()
     tat = db.IntegerProperty()
@@ -57,9 +60,7 @@ class AcarsPosition(db.Model):
     message = db.TextProperty()
 
     def add_position(self):
-        af = db.Query(AcarsFlight).filter('flight_id =', self.flight_id).get()
-        af.currentPositionKey = self.key()
-        db.put(af)
+        db.put_async(self)
 
 
 class AcarsFlight(db.Model):
@@ -72,7 +73,60 @@ class AcarsFlight(db.Model):
     flight_plan = db.StringListProperty()
     departure = db.StringProperty()
     destination = db.StringProperty()
-    currentPositionKey = db.ReferenceProperty(AcarsPosition)
     
     def add_flight(self):
-        db.put(self)
+        db.put_async(self)
+
+
+class AcarsPirep(db.Model):
+    time_report = db.DateTimeProperty(auto_now_add=True)
+    acars_id = db.IntegerProperty()
+    user_id = db.StringProperty()
+    flight_number = db.StringProperty()
+    ac_icao = db.StringProperty()
+    cruise_alt = db.IntegerProperty()
+    flight_type = db.StringProperty()
+    departure = db.StringProperty()
+    destination = db.StringProperty()
+    alternate = db.StringProperty()
+    dep_time = db.DateTimeProperty()
+    block_time = db.IntegerProperty()
+    block_fuel = db.IntegerProperty()
+    flight_time = db.IntegerProperty()
+    flight_fuel = db.IntegerProperty()
+    pax = db.IntegerProperty()
+    cargo = db.IntegerProperty()
+    online = db.IntegerProperty()
+    engine_start_ts = db.IntegerProperty()
+    takeoff_ts = db.IntegerProperty()
+    landing_ts = db.IntegerProperty()
+    engine_stop_ts = db.IntegerProperty()
+    zero_fuel_weight = db.IntegerProperty()
+    take_off_weight = db.IntegerProperty()
+    landing_weight = db.IntegerProperty()
+    out_geo = db.GeoPtProperty()
+    out_altitude = db.IntegerProperty()
+    in_geo = db.GeoPtProperty()
+    in_altitude = db.IntegerProperty()
+    max_climb_rate = db.IntegerProperty()
+    max_descend_rate = db.IntegerProperty()
+    max_ias = db.IntegerProperty()
+    max_gs = db.IntegerProperty()
+
+    def add_pirep(self):
+        db.put_async(self)
+
+class AcarsFlightData(db.Model):
+    flight_number = db.StringProperty()
+    aircraft = db.StringProperty()
+    departure = db.StringProperty()
+    destination = db.StringProperty()
+    alternate = db.StringProperty()
+    route = db.StringProperty()
+    altitude = db.StringProperty()
+    pax = db.StringProperty()
+    cargo = db.StringProperty()
+    rules = db.StringProperty()
+
+    def add_flight_data(self):
+        db.put_async(self)
