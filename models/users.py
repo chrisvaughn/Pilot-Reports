@@ -1,11 +1,11 @@
 import uuid
 
-from google.appengine.ext import db
+from google.appengine.ext.ndb import model
 
-class Users(db.Model):
-    user_id = db.StringProperty()
-    email = db.StringProperty()
-    token = db.StringProperty()
+class Users(model.Model):
+    user_id = model.StringProperty()
+    email = model.StringProperty()
+    token = model.StringProperty()
     
     def generate_token(cls, token_length):
         u = uuid.uuid4()
@@ -13,7 +13,7 @@ class Users(db.Model):
     generate_token = classmethod(generate_token)
     
     def test_pilot_id(cls, id):
-        user = db.Query(Users).filter("email =", id).get()
+        user = Users.query(Users.email == id).get()
         if user is None:
             return -1
         else:
@@ -21,7 +21,7 @@ class Users(db.Model):
     test_pilot_id = classmethod(test_pilot_id)
 
     def test_user_login(cls, id, pw):
-        user = db.Query(Users).filter("email =", id).filter("token =", pw).get()
+        user = Users.query(Users.email == id, Users.token == pw).get()
         if user is None:
             return None
         else:

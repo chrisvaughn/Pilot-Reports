@@ -2,7 +2,7 @@ import os
 import webapp2
 import jinja2
 
-from google.appengine.ext import db
+from google.appengine.ext.ndb import model
 from google.appengine.api import users as google_users
 
 from models.users import Users
@@ -20,11 +20,11 @@ class HomeController(webapp2.RequestHandler):
         data = {}
         if google_users.get_current_user():
             google_user = google_users.get_current_user()
-            user = db.Query(Users).filter('user_id =', google_user.user_id()).get()
+            user = Users.query(Users.user_id == google_user.user_id()).get()
             if user is None:
                 token = Users.generate_token(TOKEN_LENGTH)
                 user = Users(user_id = google_user.user_id(), email = google_user.email(), token = token)
-                db.put(user)
+                User.put()
 
             data['url'] = google_users.create_logout_url(self.request.uri)
             data['user'] = user

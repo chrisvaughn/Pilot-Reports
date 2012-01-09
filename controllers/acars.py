@@ -4,7 +4,7 @@ import datetime
 import webapp2
 import jinja2
 
-from google.appengine.ext import db
+from google.appengine.ext.ndb import model
 from google.appengine.api import users as google_users
 
 from models.users import Users
@@ -147,7 +147,7 @@ class LiveAcarsController(webapp2.RequestHandler):
             posLat = lat_degdecmin_2_decdeg(parts[0].strip(), parts[1].strip())
             posLon = lon_degdecmin_2_decdeg(parts[2].strip(), parts[3].strip())
             
-            acars_position.lat_lon = db.GeoPt(posLat, posLon)
+            acars_position.lat_lon = model.GeoPt(posLat, posLon)
         
         acars_position.flight_status = FLIGHTSTATUS_BOARDING;
         acars_position.waypoint = acars_flight.departure;
@@ -158,7 +158,7 @@ class LiveAcarsController(webapp2.RequestHandler):
         acars_position.tat = int(data[14])
         acars_position.fob = int(data[11])
         acars_position.distance_total = int(data[16])
-        acars_position.message = db.Text(data3)
+        acars_position.message = data3
         
         acars_position.add_position()
         
@@ -168,7 +168,7 @@ class LiveAcarsController(webapp2.RequestHandler):
         acars_position = AcarsPosition()
 
         acars_position.flight_id = data3
-        acars_position.message = db.Text(data4)
+        acars_position.message = data4
         
         #Decode the message
         #Messagetype: PR=Position Report, AR=Alitude Report, WX=Weather,
@@ -203,7 +203,7 @@ class LiveAcarsController(webapp2.RequestHandler):
                 parts = cnt.split(' ');
                 posLat = lat_degdecmin_2_decdeg(parts[0].strip(), parts[1].strip())
                 posLon = lon_degdecmin_2_decdeg(parts[2].strip(), parts[3].strip())
-                acars_position.lat_lon = db.GeoPt(posLat, posLon)
+                acars_position.lat_lon = model.GeoPt(posLat, posLon)
                 i = cnt.find('[')
                 if i != -1:
                     acars_position.waypoint = cnt[i+1:-1]
@@ -257,8 +257,7 @@ class LiveAcarsController(webapp2.RequestHandler):
             acars_position.vs = VSPEED_GND
         
         if acars_position.message_type == 'QB':
-            result = (db.Query(AcarsPosition).filter("flight_id=", acars_position.flight_id)
-                        .filter("message_type=", "QA").get())
+            result = (AcarsPosition.query(AcarsPosition.flight_id == acars_position.flight_id, AcarsPosition.message_type == "QA").get())
             if result is not None:
                 acars_position.waypoint = result.waypoint
             acars_position.flight_status = FLIGHTSTATUS_DEPARTURE
@@ -390,10 +389,10 @@ class PirepController(webapp2.RequestHandler):
             pirep.take_off_weight = int(data[22])
             pirep.landing_weight = int(data[23])
 
-            pirep.out_geo = db.GeoPt(data[24], data[25])
+            pirep.out_geo = model.GeoPt(data[24], data[25])
             pirep.out_altitude = int(data[26])
         
-            pirep.in_geo = db.GeoPt(data[27], data[28])
+            pirep.in_geo = model.GeoPt(data[27], data[28])
             pirep.in_altitude = int(data[29])
         
             pirep.max_climb_rate = int(data[30])
@@ -432,7 +431,7 @@ class FlightDataController(webapp2.RequestHandler):
         
         #logging.debug('?DATA1='+data1+'&DATA2='+data2)
 
-        flight = db.Query(AcarsFlightData).filter("flight_number =", data2).get()
+        flight = AcarsFlightData.query(AcarsFlightData.flight_number == data2).get()
 
         if flight:
             self.response.out.write('1|flightplan'+"\n")
